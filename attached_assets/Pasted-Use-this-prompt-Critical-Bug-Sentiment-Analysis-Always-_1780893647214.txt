@@ -1,0 +1,77 @@
+Use this prompt:
+
+> **Critical Bug: Sentiment Analysis Always Returns Neutral**
+>
+> The sentiment analysis feature is not working correctly.
+>
+> For every YouTube video analyzed, the system shows:
+>
+> * Neutral comments only
+> * Positive comments = 0
+> * Negative comments = 0
+> * Positive keywords = empty
+> * Negative keywords = empty
+>
+> Even videos that clearly contain comments such as:
+>
+> * "Great video!"
+> * "Amazing content"
+> * "I love this"
+> * "Thank you so much"
+> * "This is terrible"
+> * "I hate this"
+>
+> are being classified as Neutral.
+>
+> ### Investigate and Fix
+>
+> 1. Audit the complete sentiment analysis pipeline.
+> 2. Verify that YouTube comments are actually being fetched correctly.
+> 3. Log raw comments before sentiment processing.
+> 4. Verify sentiment model/API responses.
+> 5. Check sentiment score thresholds.
+> 6. Verify positive, negative, and neutral classification logic.
+> 7. Check keyword extraction logic.
+> 8. Ensure keywords inherit the correct sentiment category.
+> 9. Verify database storage and retrieval of sentiment results.
+> 10. Check frontend calculations and charts for sentiment distribution.
+>
+> ### Expected Behavior
+>
+> Example:
+>
+> Comment: "I love this video. Great work!"
+> → Positive
+>
+> Comment: "This is terrible and disappointing."
+> → Negative
+>
+> Comment: "I watched this today."
+> → Neutral
+>
+> Dashboard should show:
+>
+> * Positive comment count
+> * Negative comment count
+> * Neutral comment count
+> * Positive keywords
+> * Negative keywords
+> * Neutral keywords
+> * Correct sentiment charts
+>
+> ### Debug Requirements
+>
+> Add detailed logging for:
+>
+> * Raw YouTube comments
+> * Sentiment scores returned by the model
+> * Classification decisions
+> * Keyword extraction results
+> * Database values stored
+> * Values sent to the frontend
+>
+> ### Validation
+>
+> Test with at least 5 different videos containing clearly positive, negative, and neutral comments.
+>
+> Do not stop at identifying the bug. Trace the root cause, implement the fix, rerun the analysis, and confirm that positive and negative sentiments are displayed correctly instead of everything being classified as neutral.

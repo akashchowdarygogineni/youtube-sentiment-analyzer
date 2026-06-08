@@ -24,6 +24,8 @@ export function extractKeywords(
   for (const text of comments) {
     const words = text
       .toLowerCase()
+      // Strip HTML entities like &quot; &amp; &#39; etc.
+      .replace(/&[a-z#0-9]+;/g, " ")
       .replace(/[^a-z0-9\s']/g, " ")
       .split(/\s+/)
       .filter((w) => w.length > 3 && !STOPWORDS.has(w) && !/^\d+$/.test(w));
