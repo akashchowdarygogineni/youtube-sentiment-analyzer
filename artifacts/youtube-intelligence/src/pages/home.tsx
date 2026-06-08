@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useListVideos, useAnalyzeVideo, getListVideosQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Youtube, Search, Loader2, BarChart2, Play } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { format } from "date-fns";
 
 export default function Home() {
@@ -41,6 +42,9 @@ export default function Home() {
           <div className="flex items-center gap-2 font-bold text-lg text-primary tracking-tight">
             <Youtube className="w-6 h-6 text-red-500" />
             AudienceIntel
+          </div>
+          <div className="ml-auto">
+            <ThemeToggle />
           </div>
         </div>
       </header>

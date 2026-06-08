@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, MessageSquare, ThumbsUp, Eye, Download, FileText, Trash2 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useDeleteVideo } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { AnalyticsTab } from "@/components/dashboard/analytics-tab";
@@ -200,16 +201,19 @@ export default function Dashboard() {
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
           </Link>
           <div className="font-bold text-sm text-primary tracking-tight">AudienceIntel</div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-            <span className="hidden sm:inline">Delete Analysis</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              <span className="hidden sm:inline">Delete Analysis</span>
+            </Button>
+          </div>
         </div>
       </div>
 
