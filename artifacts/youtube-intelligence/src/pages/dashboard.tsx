@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import { 
   useGetVideo, 
-  getGetVideoQueryKey
+  getGetVideoQueryKey,
+  useGetAnalytics,
+  getGetAnalyticsQueryKey,
+  useGetAISummary,
+  getGetAISummaryQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +17,7 @@ import { useLocation } from "wouter";
 import { AnalyticsTab } from "@/components/dashboard/analytics-tab";
 import { CommentsTab } from "@/components/dashboard/comments-tab";
 import { SummaryTab } from "@/components/dashboard/summary-tab";
+import { PdfReport } from "@/components/dashboard/pdf-report";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListVideosQueryKey } from "@workspace/api-client-react";
 
@@ -22,6 +27,8 @@ export default function Dashboard() {
   const [isClient, setIsClient] = useState(false);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -32,13 +39,20 @@ export default function Dashboard() {
       enabled: !!videoId,
       queryKey: getGetVideoQueryKey(videoId),
       refetchInterval: (query) => {
-        // Continue polling if pending or processing
         if (query.state.data && (query.state.data.status === 'pending' || query.state.data.status === 'processing')) {
           return 3000;
         }
         return false;
       }
     }
+  });
+
+  const { data: analytics } = useGetAnalytics(videoId, {
+    query: { enabled: !!videoId && video?.status === 'completed', queryKey: getGetAnalyticsQueryKey(videoId) }
+  });
+
+  const { data: aiSummary } = useGetAISummary(videoId, {
+    query: { enabled: false, queryKey: getGetAISummaryQueryKey(videoId) }
   });
 
   const deleteMutation = useDeleteVideo({
@@ -53,6 +67,93 @@ export default function Dashboard() {
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this analysis?")) {
       deleteMutation.mutate({ id: videoId });
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!pdfRef.current || !video) return;
+    setIsExporting(true);
+    try {
+      const [html2canvas, { default: jsPDF }] = await Promise.all([
+        import("html2canvas").then(m => m.default),
+        import("jspdf"),
+      ]);
+
+      // Temporarily show the hidden report div
+      const el = pdfRef.current;
+      el.style.display = "block";
+      el.style.position = "fixed";
+      el.style.top = "-9999px";
+      el.style.left = "0";
+
+      // Wait for render
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        width: 794,
+        windowWidth: 794,
+      });
+
+      el.style.display = "none";
+      el.style.position = "";
+      el.style.top = "";
+      el.style.left = "";
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width / 2;   // account for scale: 2
+      const imgHeight = canvas.height / 2;
+
+      const ratio = pdfWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+
+      if (scaledHeight <= pdfHeight) {
+        // Fits on one page
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, scaledHeight);
+      } else {
+        // Multi-page: slice canvas into page-sized chunks
+        let yOffset = 0;
+        const pageHeightPx = (pdfHeight / pdfWidth) * imgWidth * 2; // in original canvas px (scale 2)
+
+        while (yOffset < canvas.height) {
+          const remaining = canvas.height - yOffset;
+          const sliceH = Math.min(pageHeightPx, remaining);
+
+          const pageCanvas = document.createElement("canvas");
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceH;
+          const ctx = pageCanvas.getContext("2d")!;
+          ctx.drawImage(canvas, 0, -yOffset);
+
+          const pageImg = pageCanvas.toDataURL("image/png");
+          const sliceScaled = (sliceH / 2) * ratio;
+
+          if (yOffset > 0) pdf.addPage();
+          pdf.addImage(pageImg, "PNG", 0, 0, pdfWidth, sliceScaled);
+
+          yOffset += sliceH;
+        }
+      }
+
+      const slug = video.title.replace(/[^a-z0-9]/gi, "_").slice(0, 40).toLowerCase();
+      pdf.save(`audienceintel_${slug}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("PDF export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -83,6 +184,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background pb-12">
+      {/* Hidden PDF report - rendered off-screen for capture */}
+      <div ref={pdfRef} style={{ display: "none" }}>
+        <PdfReport
+          video={video as any}
+          analytics={analytics as any}
+          summary={aiSummary as any}
+        />
+      </div>
+
       {/* Header */}
       <div className="border-b border-border/40 bg-card/50 sticky top-0 z-10 backdrop-blur no-print">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
@@ -245,12 +355,34 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <h3 className="font-semibold mb-1">Executive Report (PDF)</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Print a formatted overview of the dashboard and KPIs.</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Export a complete A4 report with sentiment KPIs, keyword analysis, and AI insights.
+                        </p>
                       </div>
-                      <Button variant="outline" onClick={() => window.print()} className="w-full mt-auto">
-                        Print PDF
+                      <Button
+                        variant="outline"
+                        onClick={handleExportPdf}
+                        disabled={isExporting}
+                        className="w-full mt-auto"
+                      >
+                        {isExporting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating PDF…
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export PDF
+                          </>
+                        )}
                       </Button>
                     </div>
+                  </div>
+
+                  {/* PDF preview notice */}
+                  <div className="max-w-2xl p-4 bg-muted/50 rounded-lg border border-border/50 text-sm text-muted-foreground">
+                    <strong className="text-foreground">What's included in the PDF:</strong> video metadata, sentiment KPI cards, sentiment distribution bar, top keywords per sentiment, and AI audience summary (if generated). The report is formatted for A4/Letter printing.
                   </div>
                 </CardContent>
               </Card>

@@ -1,0 +1,68 @@
+Use this stronger prompt to fix **both issues**:
+
+> **Critical Fix Required – Sentiment Analysis + PDF Export**
+>
+> The application has two major bugs that must be investigated and fixed completely.
+>
+> ### Issue 1: Sentiment Analysis is Incorrect
+>
+> The sentiment engine is misclassifying clearly positive words as neutral.
+>
+> Examples currently shown as Neutral:
+>
+> * thank
+> * thanks
+> * good
+> * great
+> * love
+>
+> Expected behavior:
+>
+> * Positive: thank, thanks, good, great, love, awesome, amazing, excellent
+> * Negative: bad, terrible, hate, awful, worst, disappointing
+> * Neutral: video, today, morning, life, much
+>
+> Tasks:
+>
+> * Audit the sentiment analysis pipeline.
+> * Review sentiment scoring thresholds.
+> * Verify keyword extraction logic.
+> * Ensure keyword sentiment is derived correctly from comments.
+> * Fix classification logic so positive keywords appear in the Positive Keywords panel.
+> * Add automated tests for sentiment classification.
+> * Validate results against real YouTube comments.
+>
+> ### Issue 2: PDF Export / Report Generation is Broken
+>
+> Current problems:
+>
+> * Large blank spaces in exported PDF.
+> * Dashboard content missing from PDF.
+> * Charts and analytics not fully rendered.
+> * PDF layout does not match dashboard.
+> * Unnecessary page breaks.
+> * Report spans multiple pages with mostly empty content.
+> * Some sections are cut off.
+>
+> Tasks:
+>
+> * Audit the entire PDF generation workflow.
+> * Verify html2canvas/jsPDF/react-to-print implementation.
+> * Ensure charts finish rendering before capture.
+> * Remove excess whitespace.
+> * Fix CSS print styles.
+> * Optimize A4/Letter layouts.
+> * Preserve charts, metrics, sentiment analysis, keywords, recommendations, and summaries.
+> * Ensure exported PDF mirrors the dashboard.
+> * Add proper page-break handling.
+> * Test exports with multiple reports.
+>
+> ### Deliverables
+>
+> 1. Fix sentiment classification.
+> 2. Fix PDF export layout.
+> 3. Run end-to-end testing.
+> 4. Identify root causes.
+> 5. Provide a summary of all code changes made.
+>
+> Do not stop after identifying the issue. Implement and verify the fixes until both features work correctly.
