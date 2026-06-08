@@ -69,17 +69,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /videos/{videoId}:
+  /videos/{id}:
     get:
       operationId: getVideo
       tags: [videos]
       summary: Get video with full analytics
       parameters:
-        - name: videoId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: Video details
@@ -98,32 +98,32 @@ paths:
       tags: [videos]
       summary: Delete a video analysis
       parameters:
-        - name: videoId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "204":
           description: Deleted
 
-  /videos/{videoId}/comments:
+  /videos/{id}/comments:
     get:
-      operationId: listComments
+      operationId: queryComments
       tags: [comments]
       summary: List comments for a video with filtering and pagination
       parameters:
-        - name: videoId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
         - name: sentiment
           in: query
           required: false
           schema:
             type: string
-            enum: [positive, negative, neutral]
+            enum: [positive, negative, neutral, all]
         - name: search
           in: query
           required: false
@@ -149,17 +149,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/CommentPage"
 
-  /videos/{videoId}/analytics:
+  /videos/{id}/analytics:
     get:
       operationId: getAnalytics
       tags: [analytics]
       summary: Get sentiment analytics and keyword insights for a video
       parameters:
-        - name: videoId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: Analytics data
@@ -168,17 +168,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Analytics"
 
-  /videos/{videoId}/summary:
+  /videos/{id}/summary:
     get:
       operationId: getAISummary
       tags: [analytics]
       summary: Get or generate AI summary of audience insights
       parameters:
-        - name: videoId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: AI-generated summary
@@ -187,17 +187,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/AISummary"
 
-  /videos/{videoId}/export/csv:
+  /videos/{id}/export/csv:
     get:
       operationId: exportCsv
       tags: [videos]
       summary: Export comments as CSV
       parameters:
-        - name: videoId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: CSV file

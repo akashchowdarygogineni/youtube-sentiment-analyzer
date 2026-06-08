@@ -1,44 +1,60 @@
-# [Project name]
+# YouTube Audience Intelligence Platform
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A production-ready SaaS dashboard that analyzes YouTube video comments using sentiment analysis, keyword extraction, and AI-generated audience insights.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/youtube-intelligence run dev` — run the frontend (port 23570)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas (also patches api-zod/src/index.ts)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL`, `YOUTUBE_API_KEY`, `HUGGINGFACE_API_KEY`, `OPENAI_API_KEY`
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
+- Frontend: React + Vite, Tailwind CSS, shadcn/ui, Recharts, Framer Motion, wouter
+- API: Express 5, async routes
+- DB: PostgreSQL + Drizzle ORM (tables: `videos`, `comments`)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
+- Sentiment: HuggingFace `cardiffnlp/twitter-roberta-base-sentiment` via Inference API
+- AI Summary: OpenAI `gpt-4o-mini`
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract (source of truth)
+- `lib/db/src/schema/videos.ts` — videos table schema
+- `lib/db/src/schema/comments.ts` — comments table schema
+- `artifacts/api-server/src/routes/videos.ts` — all video/comment/analytics routes
+- `artifacts/api-server/src/services/` — youtube, sentiment, keywords, ai services
+- `artifacts/youtube-intelligence/src/pages/` — home.tsx, dashboard.tsx
+- `artifacts/youtube-intelligence/src/components/dashboard/` — analytics, comments, summary tabs
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Sentiment classification runs in background after returning 201 to the client, so the UI can poll for status
+- HuggingFace calls are batched in groups of 32 with 200ms delay to avoid rate limits; failed batches fall back to neutral
+- AI summaries are cached in the `videos` table to avoid re-generating on every request
+- Orval collision fix: `lib/api-spec/package.json` codegen script patches `api-zod/src/index.ts` after Orval runs to drop the conflicting `./generated/types` re-export
+- CSV export streams the entire comment set as text/csv directly from the API
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Users paste a YouTube URL → the platform fetches video details + up to 500 comments → classifies each as positive/negative/neutral → displays KPI cards, pie/bar/line charts, top keywords, color-coded comment explorer, AI-generated audience summary, and CSV/PDF export.
+
+## Gotchas
+
+- After any `openapi.yaml` change, run codegen with `pnpm --filter @workspace/api-spec run codegen` — this script also patches `lib/api-zod/src/index.ts` to remove the conflicting types barrel export
+- HuggingFace model may be cold-starting (first request can take 20–30s); the `wait_for_model: true` option handles this
+- `processVideo()` runs as a detached async task — errors there only surface in server logs
 
 ## User preferences
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Pointers
 
