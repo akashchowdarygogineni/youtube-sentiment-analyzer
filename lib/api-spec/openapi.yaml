@@ -1,22 +1,26 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: YouTube Audience Intelligence Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: videos
+    description: YouTube video analysis
+  - name: comments
+    description: Comment management
+  - name: analytics
+    description: Sentiment analytics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +28,388 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /videos:
+    get:
+      operationId: listVideos
+      tags: [videos]
+      summary: List all analyzed videos
+      responses:
+        "200":
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Video"
+
+  /videos/analyze:
+    post:
+      operationId: analyzeVideo
+      tags: [videos]
+      summary: Analyze a YouTube video URL (fetch details, comments, sentiment)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoInput"
+      responses:
+        "201":
+          description: Video analysis started/completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "400":
+          description: Invalid URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /videos/{videoId}:
+    get:
+      operationId: getVideo
+      tags: [videos]
+      summary: Get video with full analytics
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Video details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteVideo
+      tags: [videos]
+      summary: Delete a video analysis
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /videos/{videoId}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments for a video with filtering and pagination
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sentiment
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [positive, negative, neutral]
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentPage"
+
+  /videos/{videoId}/analytics:
+    get:
+      operationId: getAnalytics
+      tags: [analytics]
+      summary: Get sentiment analytics and keyword insights for a video
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analytics"
+
+  /videos/{videoId}/summary:
+    get:
+      operationId: getAISummary
+      tags: [analytics]
+      summary: Get or generate AI summary of audience insights
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: AI-generated summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AISummary"
+
+  /videos/{videoId}/export/csv:
+    get:
+      operationId: exportCsv
+      tags: [videos]
+      summary: Export comments as CSV
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    VideoInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: YouTube video URL
+
+    Video:
+      type: object
+      required: [id, youtubeId, title, channelName, viewCount, likeCount, publishedAt, thumbnailUrl, commentCount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        youtubeId:
+          type: string
+        title:
+          type: string
+        channelName:
+          type: string
+        viewCount:
+          type: integer
+        likeCount:
+          type: integer
+        publishedAt:
+          type: string
+        thumbnailUrl:
+          type: string
+        commentCount:
+          type: integer
+        status:
+          type: string
+          enum: [pending, processing, completed, error]
+        createdAt:
+          type: string
+
+    VideoDetail:
+      type: object
+      required: [id, youtubeId, title, channelName, viewCount, likeCount, publishedAt, thumbnailUrl, commentCount, status, createdAt, sentimentSummary]
+      properties:
+        id:
+          type: integer
+        youtubeId:
+          type: string
+        title:
+          type: string
+        channelName:
+          type: string
+        viewCount:
+          type: integer
+        likeCount:
+          type: integer
+        publishedAt:
+          type: string
+        thumbnailUrl:
+          type: string
+        commentCount:
+          type: integer
+        status:
+          type: string
+          enum: [pending, processing, completed, error]
+        createdAt:
+          type: string
+        sentimentSummary:
+          $ref: "#/components/schemas/SentimentSummary"
+
+    SentimentSummary:
+      type: object
+      required: [positive, negative, neutral, total]
+      properties:
+        positive:
+          type: integer
+        negative:
+          type: integer
+        neutral:
+          type: integer
+        total:
+          type: integer
+        positivePercent:
+          type: number
+        negativePercent:
+          type: number
+        neutralPercent:
+          type: number
+
+    Comment:
+      type: object
+      required: [id, videoId, text, authorName, likeCount, publishedAt, sentiment, confidence]
+      properties:
+        id:
+          type: integer
+        videoId:
+          type: integer
+        text:
+          type: string
+        authorName:
+          type: string
+        likeCount:
+          type: integer
+        publishedAt:
+          type: string
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+        confidence:
+          type: number
+
+    CommentPage:
+      type: object
+      required: [data, total, page, limit, totalPages]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
+    Analytics:
+      type: object
+      required: [sentimentSummary, sentimentOverTime, topPositiveKeywords, topNegativeKeywords, topNeutralKeywords]
+      properties:
+        sentimentSummary:
+          $ref: "#/components/schemas/SentimentSummary"
+        sentimentOverTime:
+          type: array
+          items:
+            $ref: "#/components/schemas/SentimentTimePoint"
+        topPositiveKeywords:
+          type: array
+          items:
+            $ref: "#/components/schemas/Keyword"
+        topNegativeKeywords:
+          type: array
+          items:
+            $ref: "#/components/schemas/Keyword"
+        topNeutralKeywords:
+          type: array
+          items:
+            $ref: "#/components/schemas/Keyword"
+
+    SentimentTimePoint:
+      type: object
+      required: [date, positive, negative, neutral]
+      properties:
+        date:
+          type: string
+        positive:
+          type: integer
+        negative:
+          type: integer
+        neutral:
+          type: integer
+
+    Keyword:
+      type: object
+      required: [word, count]
+      properties:
+        word:
+          type: string
+        count:
+          type: integer
+
+    AISummary:
+      type: object
+      required: [videoId, summary, strengths, weaknesses, commonThemes, generatedAt]
+      properties:
+        videoId:
+          type: integer
+        summary:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        commonThemes:
+          type: array
+          items:
+            type: string
+        generatedAt:
+          type: string

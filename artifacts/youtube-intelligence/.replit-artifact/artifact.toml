@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "YouTube Audience Intelligence Platform"
+version = "1.0.0"
+id = "artifacts/youtube-intelligence"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23570
+
+[services.development]
+run = "pnpm --filter @workspace/youtube-intelligence run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/youtube-intelligence", "run", "build" ]
+publicDir = "artifacts/youtube-intelligence/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23570"
+BASE_PATH = "/"
